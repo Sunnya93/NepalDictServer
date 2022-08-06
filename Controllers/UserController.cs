@@ -45,33 +45,6 @@ namespace NepalDictServer.Controllers
             return Ok(response);
         }
 
-        //[HttpGet]
-        //GET: Word
-        //public IActionResult Login(string Id, string hashedPassword)
-        //{
-        //    try
-        //    {
-        //        var password = "1234";
-        //        var hashedPassword = Sha256encrypt(password);
-
-        //        var allowLogin = hashedPassword == storedPassword; //storedPassword from Database, etc.
-
-        //        string hashedPassword = SHA256Encrypt(Password);
-
-        //        UserModel user = _context.Users!.Where(i => i.UserPhone == Id).Where(i => i.PassWord == hashedPassword)
-
-        //        Response<List<UserModel>> users = new Response<List<UserModel>>(_context.Users!.ToList());
-
-        //        return Ok(users);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        ErrorResponse errorResponse = new ErrorResponse(ex.Message);
-
-        //        return StatusCode(500, errorResponse);
-        //    }
-        //}
-
         [HttpGet("{userid}/{username}/{useYN}")]
         public async Task<IActionResult> GetFromParams(string userid, string username, string useYN)
         {
