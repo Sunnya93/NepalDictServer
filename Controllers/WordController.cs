@@ -10,6 +10,7 @@ using NepalDictServer.DbContext;
 
 namespace NepalDictServer.Controllers
 {
+    [Authorization.Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class WordController : ControllerBase
@@ -41,7 +42,7 @@ namespace NepalDictServer.Controllers
             }
         }
 
-        [HttpGet]
+        [HttpGet("{FromDate}")]
         public async Task<IActionResult> GetFromDate(string FromDate)
         {
             try
@@ -59,7 +60,7 @@ namespace NepalDictServer.Controllers
             }
         }
 
-        [HttpPost]
+        [HttpPost("{list}")]
         public IActionResult PostWords([FromBody]List<WordModel> words)
         {
             try

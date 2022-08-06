@@ -1,4 +1,7 @@
-﻿namespace NepalDictServer
+﻿using System.Security.Cryptography;
+using System.Text;
+
+namespace NepalDictServer
 {
     public class Func
     {

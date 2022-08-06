@@ -10,6 +10,7 @@ using NepalDictServer.DbContext;
 
 namespace NepalDictServer.Controllers
 {
+    [Authorization.Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class NoticeController : ControllerBase
@@ -29,9 +30,9 @@ namespace NepalDictServer.Controllers
         {
             try
             {
-                Response<List<NoticeModel>> words = new Response<List<NoticeModel>>(_context.Notices!.ToList()); 
+                Response<List<NoticeModel>> notices = new Response<List<NoticeModel>>(_context.Notices!.ToList()); 
 
-                return Ok(words);
+                return Ok(notices);
             }
             catch(Exception ex)
             {
@@ -41,15 +42,15 @@ namespace NepalDictServer.Controllers
             }
         }
 
-        [HttpGet]
+        [HttpGet("{FromDate}")]
         public async Task<IActionResult> GetFromDate(string FromDate)
         {
             try
             {
                 DateTime dtFrom = Convert.ToDateTime(Func.ConvertDateString(FromDate));
-                Response<List<NoticeModel>> words = new Response<List<NoticeModel>>(await _context.Notices!.Where(p => p.Insert_Date >= dtFrom).ToListAsync());
+                Response<List<NoticeModel>> notices = new Response<List<NoticeModel>>(await _context.Notices!.Where(p => p.Insert_Date >= dtFrom).ToListAsync());
 
-                return Ok(words);
+                return Ok(notices);
             }
             catch (Exception ex)
             {
@@ -95,24 +96,24 @@ namespace NepalDictServer.Controllers
         }
 
         [HttpDelete]
-        public IActionResult DeleteWord([FromBody] NoticeModel Notices)
+        public IActionResult DeleteNotice([FromBody] NoticeModel notices)
         {
             try
             {
                 _context.Database.BeginTransaction();
 
-                bool IsExist = _context.Notices!.Where(i => i.Id == Notices.Id).Any();
+                bool IsExist = _context.Notices!.Where(i => i.Id == notices.Id).Any();
 
                 if (IsExist)
                 {
-                    _context.Notices!.Remove(Notices);
+                    _context.Notices!.Remove(notices);
                 }
 
                 _context.Database.CommitTransaction();
 
-                Response<NoticeModel> response = new Response<NoticeModel>(Notices);
+                Response<NoticeModel> response = new Response<NoticeModel>(notices);
 
-                return Ok($"{Notices.Id} Deleted");
+                return Ok($"{notices.Id} Deleted");
             }
             catch (Exception ex)
             {
