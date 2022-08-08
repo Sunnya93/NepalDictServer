@@ -131,7 +131,7 @@ namespace NepalDictServer.Controllers
 
                     _context.Database.CommitTransaction();
 
-                    Response<string> response = new Response<string>("비밀번호 변경이 완료되었습니다");
+                    Response<string> response = new Response<string>(Convert.ToBase64String(salt));
                     return Ok(response);
 
                 }
