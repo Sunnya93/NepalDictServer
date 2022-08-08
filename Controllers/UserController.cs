@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -88,6 +90,55 @@ namespace NepalDictServer.Controllers
                 Response<UserModel> response = new Response<UserModel>(user);
 
                 return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _context.Database.RollbackTransaction();
+
+                ErrorResponse errorResponse = new ErrorResponse(ex.Message);
+
+                return StatusCode(500, errorResponse);
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpPost("{id}/{name}")]
+        public IActionResult ResetPassWord(string id, string name)
+        {
+            try
+            {
+                _context.Database.BeginTransaction();
+
+                UserModel? user = _context.Users!.Where(i => i.UserPhone == id)
+                                                 .Where(i => i.UserName!.Contains(name)).FirstOrDefault();
+                if (user is not null)
+                {
+
+                    byte[] salt = RandomNumberGenerator.GetBytes(128 / 8);
+                    string hashed = Convert.ToBase64String(KeyDerivation.Pbkdf2(
+                                                                                password: id!,
+                                                                                salt: salt,
+                                                                                prf: KeyDerivationPrf.HMACSHA256,
+                                                                                iterationCount: 100000,
+                                                                                numBytesRequested: 256 / 8));
+
+                    user.PassWord = hashed;
+                    user.PassWord_Salt = salt;
+                    user.Update_Date = DateTime.Now;
+                    user.Update_User = user.UserPhone;
+
+                    _context.Users!.Update(user);
+
+                    _context.Database.CommitTransaction();
+
+                    Response<string> response = new Response<string>("비밀번호 변경이 완료되었습니다");
+                    return Ok(response);
+
+                }
+                else
+                {
+                    throw new Exception("사용자 정보가 맞지 않습니다. 비밀번호를 변경할 수 없습니다.");
+                }
             }
             catch (Exception ex)
             {
