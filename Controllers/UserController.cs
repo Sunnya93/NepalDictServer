@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -19,13 +20,15 @@ namespace NepalDictServer.Controllers
     {
         private readonly DataContext _context;
         private readonly ILogger<UserController> _logger;
+        private readonly IMapper _mapper;
         private UserService _userService;
 
-        public UserController(DataContext context, ILogger<UserController> logger)
+        public UserController(DataContext context, ILogger<UserController> logger, IMapper mapper)
         {
             _context = context;
             _logger = logger;
             _userService = new UserService(context);
+            _mapper = mapper;
         }
 
         [AllowAnonymous]
@@ -37,8 +40,8 @@ namespace NepalDictServer.Controllers
             if (user is null)
                 return BadRequest(new { message = "Username or password is incorrect" });
 
-            //user password 노출 되지 않도록 mapper 사용
-            Response<UserModel> response = new Response<UserModel>(user);
+            var resources = _mapper.Map<UserModel, UserResource>(user);
+            Response<UserResource> response = new Response<UserResource>(resources);
 
             return Ok(response);
         }
@@ -48,12 +51,14 @@ namespace NepalDictServer.Controllers
         {
             try
             {
-                Response<List<UserModel>> users = new Response<List<UserModel>>(await _context.Users!.Where(i => i.UserPhone == userid)
-                                                                                                     .Where(i => i.UserName == username)
-                                                                                                     .Where(i => i.UseYN == useYN).ToListAsync());
-                //user password 노출 되지 않도록 mapper 사용
+                List<UserModel> users = new List<UserModel>(await _context.Users!.Where(i => i.UserPhone == userid)
+                                                                                 .Where(i => i.UserName == username)
+                                                                                 .Where(i => i.UseYN == useYN).ToListAsync());
 
-                return Ok(users);
+                var resources = _mapper.Map<List<UserModel>, List<UserResource>>(users);
+                Response<List<UserResource>> response = new Response<List<UserResource>>(resources);
+
+                return Ok(response);
             }
             catch (Exception ex)
             {
@@ -84,9 +89,8 @@ namespace NepalDictServer.Controllers
                 }
                 _context.Database.CommitTransaction();
 
-                //user password 노출 되지 않도록 mapper 사용
-
-                Response<UserModel> response = new Response<UserModel>(user);
+                var resources = _mapper.Map<UserModel, UserResource>(user);
+                Response<UserResource> response = new Response<UserResource>(resources);
 
                 return Ok(response);
             }
