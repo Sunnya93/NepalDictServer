@@ -32,18 +32,14 @@ namespace NepalDictServer.Controllers
         [HttpPost("authenticate")]
         public async Task<IActionResult> Authenticate(string userPhone, string password)
         {
-            //&& x.PassWord == password
-
-            // wrapped in "await Task.Run" to mimic fetching user from a db
             var user = await _userService.Authenticate(userPhone, password);
 
-            // on auth fail: null is returned because user is not found
-            if (user == null)
+            if (user is null)
                 return BadRequest(new { message = "Username or password is incorrect" });
 
-            Response<UserModel> response = new Response<UserModel>(user!);
+            //user password 노출 되지 않도록 mapper 사용
+            Response<UserModel> response = new Response<UserModel>(user);
 
-            // on auth success: user object is returned
             return Ok(response);
         }
 
@@ -55,6 +51,7 @@ namespace NepalDictServer.Controllers
                 Response<List<UserModel>> users = new Response<List<UserModel>>(await _context.Users!.Where(i => i.UserPhone == userid)
                                                                                                      .Where(i => i.UserName == username)
                                                                                                      .Where(i => i.UseYN == useYN).ToListAsync());
+                //user password 노출 되지 않도록 mapper 사용
 
                 return Ok(users);
             }
@@ -75,6 +72,7 @@ namespace NepalDictServer.Controllers
                 _context.Database.BeginTransaction();
 
                 bool IsExist = _context.Users!.Where(i => i.UserPhone == user.UserPhone).Any();
+                user.PassWord = BCrypt.Net.BCrypt.HashPassword(user.PassWord);
 
                 if (IsExist)
                 {
@@ -84,8 +82,9 @@ namespace NepalDictServer.Controllers
                 {
                     _context.Users!.Add(user);
                 }
-
                 _context.Database.CommitTransaction();
+
+                //user password 노출 되지 않도록 mapper 사용
 
                 Response<UserModel> response = new Response<UserModel>(user);
 
@@ -103,7 +102,7 @@ namespace NepalDictServer.Controllers
 
         [AllowAnonymous]
         [HttpPost("{id}/{name}")]
-        public IActionResult ResetPassWord(string id, string name)
+        public IActionResult ResetPassWord(string id, string name, string hashedPassword)
         {
             try
             {
@@ -113,17 +112,7 @@ namespace NepalDictServer.Controllers
                                                  .Where(i => i.UserName!.Contains(name)).FirstOrDefault();
                 if (user is not null)
                 {
-
-                    byte[] salt = RandomNumberGenerator.GetBytes(128 / 8);
-                    string hashed = Convert.ToBase64String(KeyDerivation.Pbkdf2(
-                                                                                password: id!,
-                                                                                salt: salt,
-                                                                                prf: KeyDerivationPrf.HMACSHA256,
-                                                                                iterationCount: 100000,
-                                                                                numBytesRequested: 256 / 8));
-
-                    user.PassWord = hashed;
-                    user.PassWord_Salt = salt;
+                    user.PassWord = BCrypt.Net.BCrypt.HashPassword(hashedPassword);
                     user.Update_Date = DateTime.Now;
                     user.Update_User = user.UserPhone;
 
@@ -131,9 +120,8 @@ namespace NepalDictServer.Controllers
 
                     _context.Database.CommitTransaction();
 
-                    Response<string> response = new Response<string>(Convert.ToBase64String(salt));
+                    Response<string> response = new Response<string>("비밀번호 변경 완료");
                     return Ok(response);
-
                 }
                 else
                 {
@@ -166,9 +154,9 @@ namespace NepalDictServer.Controllers
 
                 _context.Database.CommitTransaction();
 
-                Response<UserModel> response = new Response<UserModel>(user);
+                Response<string> response = new Response<string>($"{user.UserName} 삭제 완료");
 
-                return Ok($"{user.UserName} Deleted");
+                return Ok(response);
             }
             catch (Exception ex)
             {
